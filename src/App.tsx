@@ -18,6 +18,7 @@ import { Toast } from './components/Toast';
 import { ShareModal } from './components/ShareModal';
 import { AddToPlaylistModal } from './components/AddToPlaylistModal';
 import { usePlayer } from './context/PlayerContext';
+import backgroundCollage from './assets/background.jpg';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('intro');
@@ -79,13 +80,15 @@ export default function App() {
         <img
           alt="Background collage"
           className="w-full h-full object-cover"
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWqtLP925kTEI7_J__UokCOU2wzNNYgR_6nhzGvl0_I2AUT5KGF2mtyUWE2kFv-hF2uTChd_IU7hVyW0mUQl-l6OkIZHikUt-XfarLZkMqsjAgeq2lAQ4VVKUqHCjJZgzQqjeDNIo-NYoTQd6JE6Xps3gd8Z2dRPuIYpAyinWFwivRi3YrRPx6RUeoFGnZmzn6GUMAz4hAexqL8Xe9an3uR2PspawnHIcSlNPLKvBw7mgFJcY2zgvhNge46RqMj5ET7A"
-          referrerPolicy="no-referrer"
+          src={backgroundCollage}
           onError={(e) => {
-            e.currentTarget.src = '/background.jpg';
+            const target = e.currentTarget;
+            if (!target.src.includes('lh3.googleusercontent.com')) {
+              target.src = "https://lh3.googleusercontent.com/aida-public/AB6AXuAWqtLP925kTEI7_J__UokCOU2wzNNYgR_6nhzGvl0_I2AUT5KGF2mtyUWE2kFv-hF2uTChd_IU7hVyW0mUQl-l6OkIZHikUt-XfarLZkMqsjAgeq2lAQ4VVKUqHCjJZgzQqjeDNIo-NYoTQd6JE6Xps3gd8Z2dRPuIYpAyinWFwivRi3YrRPx6RUeoFGnZmzn6GUMAz4hAexqL8Xe9an3uR2PspawnHIcSlNPLKvBw7mgFJcY2zgvhNge46RqMj5ET7A";
+            }
           }}
         />
-        <div className="absolute inset-0 bg-surface/70"></div>
+        <div className="absolute inset-0 bg-surface/50"></div>
       </div>
 
       {activeTab !== 'intro' && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onProfileClick={handleProfileClick} isLoggedIn={isLoggedIn} avatarUrl={avatarUrl} />}
