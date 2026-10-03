@@ -252,7 +252,7 @@ export const GlobalPlayer: React.FC = () => {
 
       {/* Real YouTube Player: Stably mounted with valid dimensions (never 1x1 or opacity 0) */}
       <div
-        id="beatz-youtube-dock"
+        id="vibra-youtube-dock"
         className={`transition-all duration-300 ${
           showVideoInFullscreen
             ? 'fixed inset-x-4 top-28 bottom-36 md:inset-x-24 md:top-32 md:bottom-40 z-[90] rounded-3xl overflow-hidden shadow-2xl bg-black border border-white/20'

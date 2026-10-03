@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../lib/firebase';
+import firebaseConfig from '../../firebase-applet-config.json';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   updateProfile,
   signInWithPopup,
+  signInWithCredential,
   GoogleAuthProvider,
   signInAnonymously
 } from 'firebase/auth';
@@ -28,6 +30,63 @@ export const AuthTab = () => {
   const [domainCopied, setDomainCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
+  const googleBtnContainerRef = useRef<HTMLDivElement>(null);
+
+  // Initialize Google Identity Services (GIS) inline one-click sign in if supported
+  useEffect(() => {
+    const clientId = firebaseConfig.oAuthClientId;
+    if (!clientId) return;
+
+    const scriptId = 'google-identity-services-script';
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+    
+    const initGis = () => {
+      const g = (window as any).google;
+      if (g?.accounts?.id && googleBtnContainerRef.current) {
+        try {
+          g.accounts.id.initialize({
+            client_id: clientId,
+            callback: async (response: any) => {
+              if (!response?.credential) return;
+              try {
+                setSocialLoading('google');
+                const credential = GoogleAuthProvider.credential(response.credential);
+                await signInWithCredential(auth, credential);
+              } catch (gisErr: any) {
+                console.warn('GIS credential sign-in note:', gisErr);
+                setError(getFriendlyErrorMessage(gisErr?.code || '', false, gisErr?.message));
+              } finally {
+                setSocialLoading(null);
+              }
+            }
+          });
+
+          googleBtnContainerRef.current.innerHTML = '';
+          g.accounts.id.renderButton(googleBtnContainerRef.current, {
+            theme: 'filled_black',
+            size: 'large',
+            shape: 'pill',
+            text: isSignUp ? 'signup_with' : 'signin_with',
+            width: 280,
+          });
+        } catch (e) {
+          console.info('GIS init note:', e);
+        }
+      }
+    };
+
+    if (!script) {
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = initGis;
+      document.body.appendChild(script);
+    } else {
+      initGis();
+    }
+  }, [isSignUp]);
 
   const getFriendlyErrorMessage = (errCode: string, isSignUpMode: boolean, rawMessage?: string) => {
     switch (errCode) {
@@ -50,9 +109,9 @@ export const AuthTab = () => {
       case 'auth/invalid-email':
         return 'Please enter a valid email address.';
       case 'auth/popup-closed-by-user':
-        return 'Sign-in popup was closed before completing. Please try again.';
+        return 'The sign-in popup was closed. Click Continue with Google to try again, or sign in below.';
       case 'auth/cancelled-popup-request':
-        return 'Sign-in popup request was cancelled or closed. Click Continue with Google to retry.';
+        return 'Sign-in popup was cancelled. Click Continue with Google to retry.';
       case 'auth/popup-blocked':
         return 'Popups are blocked by your browser. Please allow popups or use email sign-in.';
       case 'auth/network-request-failed':
@@ -83,7 +142,7 @@ export const AuthTab = () => {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }
     } catch (err: any) {
-      console.error('Auth error:', err);
+      console.warn('Auth note:', err);
       const code = err?.code || '';
       setError(getFriendlyErrorMessage(code, isSignUp, err?.message));
     } finally {
@@ -106,9 +165,20 @@ export const AuthTab = () => {
 
       await signInWithPopup(auth, provider);
     } catch (err: any) {
-      console.error('Google sign-in error:', err);
       const code = err?.code || '';
       const message = err?.message || '';
+
+      // Gracefully handle expected user cancellations without throwing errors
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        console.info('Google sign-in popup closed by user');
+        setErrorDetail({
+          title: 'Sign-In Window Closed',
+          message: 'The Google sign-in window was closed. Click below to try again, or use Quick Login.',
+        });
+        return;
+      }
+
+      console.warn('Google sign-in notice:', code, message);
 
       if (code === 'auth/unauthorized-domain') {
         setErrorDetail({
@@ -128,16 +198,11 @@ export const AuthTab = () => {
       } else if (code === 'auth/popup-blocked') {
         setErrorDetail({
           title: 'Browser Blocked the Google Popup',
-          message: 'Your browser or iframe environment blocked the popup window. Look for the popup blocker icon in your browser address bar to allow popups, or use Email Sign-In below.',
-        });
-      } else if (code === 'auth/popup-closed-by-user') {
-        setErrorDetail({
-          title: 'Google Sign-In Cancelled',
-          message: 'The sign-in window was closed before finishing. Click Continue with Google to try again.',
+          message: 'Your browser or iframe environment blocked the popup window. Look for the popup blocker icon in your browser address bar to allow popups, or use Email / Guest sign-in below.',
         });
       } else {
         setErrorDetail({
-          title: 'Google Sign-In Issue',
+          title: 'Google Sign-In Notice',
           message: getFriendlyErrorMessage(code, false, message),
         });
       }
@@ -154,7 +219,7 @@ export const AuthTab = () => {
       const userCredential = await signInAnonymously(auth);
       await updateProfile(userCredential.user, { displayName: 'Guest Explorer' });
     } catch (err: any) {
-      console.error('Guest sign-in error:', err);
+      console.warn('Guest sign-in note:', err);
       const code = err?.code || '';
       setError(getFriendlyErrorMessage(code, false, err?.message));
     } finally {
@@ -208,13 +273,16 @@ export const AuthTab = () => {
         </p>
 
         {/* Quick Sign In Options */}
-        <div className="flex flex-col gap-3 mb-6">
+        <div className="flex flex-col items-center gap-3 mb-6 w-full">
+          {/* Native Google One-Tap Button (if GIS loads) */}
+          <div ref={googleBtnContainerRef} className="flex justify-center min-h-[40px] empty:hidden"></div>
+
           <button
             type="button"
             id="google-signin-btn"
             disabled={loading || socialLoading !== null}
             onClick={handleGoogleSignIn}
-            className="flex items-center justify-center gap-3 bg-white/10 hover:bg-white/15 active:scale-[0.98] border border-white/15 text-pale-cream rounded-full py-3.5 px-6 font-label text-sm tracking-wider transition-all cursor-pointer disabled:opacity-50 shadow-md"
+            className="w-full flex items-center justify-center gap-3 bg-white/10 hover:bg-white/15 active:scale-[0.98] border border-white/15 text-pale-cream rounded-full py-3.5 px-6 font-label text-sm tracking-wider transition-all cursor-pointer disabled:opacity-50 shadow-md"
           >
             {socialLoading === 'google' ? (
               <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
@@ -226,7 +294,7 @@ export const AuthTab = () => {
                 <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16c1.8 3.7 5.6 7 10.1 7z" />
               </svg>
             )}
-            <span>{socialLoading === 'google' ? 'Opening Google...' : 'Continue with Google'}</span>
+            <span>{socialLoading === 'google' ? 'Connecting to Google...' : 'Continue with Google'}</span>
           </button>
 
           <button
@@ -234,7 +302,7 @@ export const AuthTab = () => {
             id="guest-signin-btn"
             disabled={loading || socialLoading !== null}
             onClick={handleGuestSignIn}
-            className="flex items-center justify-center gap-2 bg-surface-container/60 hover:bg-surface-container/90 active:scale-[0.98] border border-white/5 text-muted-grey hover:text-pale-cream rounded-full py-3 px-6 font-label text-xs tracking-widest uppercase transition-all cursor-pointer disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 bg-surface-container/60 hover:bg-surface-container/90 active:scale-[0.98] border border-white/5 text-muted-grey hover:text-pale-cream rounded-full py-3 px-6 font-label text-xs tracking-widest uppercase transition-all cursor-pointer disabled:opacity-50"
           >
             {socialLoading === 'guest' ? (
               <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
