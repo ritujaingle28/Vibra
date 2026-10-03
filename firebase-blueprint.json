@@ -1,0 +1,98 @@
+{
+  "entities": {
+    "Track": {
+      "title": "Track",
+      "description": "A music track from YouTube.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 300 },
+        "channel": { "type": "string", "maxLength": 100 },
+        "thumbnail": { "type": "string", "maxLength": 500 },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["title", "channel", "thumbnail", "timestamp"]
+    },
+    "Playlist": {
+      "title": "Playlist",
+      "description": "A user-created or AI-generated playlist.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 600 },
+        "coverUrl": { "type": "string", "maxLength": 600 },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "isAIGenerated": { "type": "boolean" },
+        "prompt": { "type": "string", "maxLength": 600 },
+        "tracks": {
+          "type": "array",
+          "items": { "type": "object" },
+          "maxItems": 100
+        }
+      },
+      "required": ["name", "description", "coverUrl", "createdAt", "updatedAt", "isAIGenerated", "prompt", "tracks"]
+    },
+    "Cassette": {
+      "title": "Cassette",
+      "description": "A custom retro song cassette mixtape made for loved ones with a personal note.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 150 },
+        "recipientName": { "type": "string", "maxLength": 100 },
+        "senderName": { "type": "string", "maxLength": 100 },
+        "note": { "type": "string", "maxLength": 2000 },
+        "themeColor": { "type": "string", "maxLength": 50 },
+        "sticker": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "tracks": {
+          "type": "array",
+          "items": { "type": "object" },
+          "maxItems": 50
+        }
+      },
+      "required": ["title", "recipientName", "senderName", "note", "themeColor", "createdAt", "updatedAt", "tracks"]
+    },
+    "UserLoginRecord": {
+      "title": "UserLoginRecord",
+      "description": "Secure audit record of all user logins and authentication IDs. Strictly accessible exclusively by beatzapp.team@gmail.com.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 200 },
+        "displayName": { "type": "string", "maxLength": 150 },
+        "photoURL": { "type": "string", "maxLength": 600 },
+        "providerId": { "type": "string", "maxLength": 100 },
+        "isAnonymous": { "type": "boolean" },
+        "lastLoginAt": { "type": "number" },
+        "firstLoginAt": { "type": "number" },
+        "loginCount": { "type": "number" },
+        "userAgent": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["uid", "email", "lastLoginAt", "providerId"]
+    }
+  },
+  "firestore": {
+    "admin_user_logins/{loginId}": {
+      "schema": { "$ref": "#/entities/UserLoginRecord" },
+      "description": "Central secure database of all user login accounts and login IDs. Strictly readable only by beatzapp.team@gmail.com."
+    },
+    "users/{userId}/recent_plays/{trackId}": {
+      "schema": { "$ref": "#/entities/Track" },
+      "description": "User's recently played tracks."
+    },
+    "users/{userId}/liked_songs/{trackId}": {
+      "schema": { "$ref": "#/entities/Track" },
+      "description": "User's liked tracks."
+    },
+    "users/{userId}/playlists/{playlistId}": {
+      "schema": { "$ref": "#/entities/Playlist" },
+      "description": "User's manual and AI-generated playlists."
+    },
+    "users/{userId}/cassettes/{cassetteId}": {
+      "schema": { "$ref": "#/entities/Cassette" },
+      "description": "Custom song cassettes made for loved ones with personal notes."
+    }
+  }
+}
+

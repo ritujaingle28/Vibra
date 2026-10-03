@@ -1,0 +1,6 @@
+{
+  "name": "Vibe Time Music Player",
+  "description": "Retro aesthetic music player and streaming app with Google Lyria 3 music generation (lyria-3-clip-preview and lyria-3-pro-preview), custom song cassettes for loved ones, handwritten notes, AI-powered lyrics, personalized categorization, and curated mix generation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

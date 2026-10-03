@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'beatzapp.team@gmail.com';
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTrack(data) {
+      return data.keys().hasAll(['title', 'channel', 'thumbnail', 'timestamp']) &&
+             data.keys().size() == 4 &&
+             data.title is string && data.title.size() <= 300 &&
+             data.channel is string && data.channel.size() <= 100 &&
+             data.thumbnail is string && data.thumbnail.size() <= 500 &&
+             data.timestamp is number;
+    }
+
+    function isValidPlaylist(data) {
+      return data.name is string && data.name.size() <= 150 &&
+             data.description is string && data.description.size() <= 600 &&
+             data.coverUrl is string && data.coverUrl.size() <= 600 &&
+             data.createdAt is number &&
+             data.updatedAt is number &&
+             data.isAIGenerated is bool &&
+             data.prompt is string && data.prompt.size() <= 600 &&
+             data.tracks is list && data.tracks.size() <= 100;
+    }
+
+    function isValidCassette(data) {
+      return data.title is string && data.title.size() <= 150 &&
+             data.recipientName is string && data.recipientName.size() <= 100 &&
+             data.senderName is string && data.senderName.size() <= 100 &&
+             data.note is string && data.note.size() <= 2000 &&
+             data.themeColor is string && data.themeColor.size() <= 50 &&
+             data.createdAt is number &&
+             data.updatedAt is number &&
+             data.tracks is list && data.tracks.size() <= 50;
+    }
+
+    match /users/{userId}/recent_plays/{trackId} {
+      allow read, list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(trackId) && isValidTrack(incoming());
+      allow update: if isOwner(userId) && isValidId(trackId) && isValidTrack(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'channel', 'thumbnail', 'timestamp']);
+      allow delete: if isOwner(userId) && isValidId(trackId);
+    }
+
+    match /users/{userId}/liked_songs/{trackId} {
+      allow read, list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(trackId) && isValidTrack(incoming());
+      allow update: if isOwner(userId) && isValidId(trackId) && isValidTrack(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'channel', 'thumbnail', 'timestamp']);
+      allow delete: if isOwner(userId) && isValidId(trackId);
+    }
+
+    match /users/{userId}/playlists/{playlistId} {
+      allow read, list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(playlistId) && isValidPlaylist(incoming());
+      allow update: if isOwner(userId) && isValidId(playlistId) && isValidPlaylist(incoming());
+      allow delete: if isOwner(userId) && isValidId(playlistId);
+    }
+
+    match /users/{userId}/cassettes/{cassetteId} {
+      allow get: if true;
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(cassetteId) && isValidCassette(incoming());
+      allow update: if isOwner(userId) && isValidId(cassetteId) && isValidCassette(incoming());
+      allow delete: if isOwner(userId) && isValidId(cassetteId);
+    }
+
+    match /users/{userId}/generated_tracks/{trackId} {
+      allow read, list: if isOwner(userId);
+      allow create, update, delete: if isOwner(userId);
+    }
+
+    // Secure database of all login accounts & IDs
+    // STRICT RULE: Only beatzapp.team@gmail.com can read, list, or access login records
+    match /admin_user_logins/{loginId} {
+      allow get, list: if isAdmin();
+      allow create, update: if isSignedIn() && (request.auth.uid == loginId || isAdmin());
+      allow delete: if isAdmin();
+    }
+  }
+}

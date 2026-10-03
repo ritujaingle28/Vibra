@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #131312;
+  --color-surface: #131312;
+  --color-surface-dim: #131312;
+  --color-surface-container: #20201e;
+  --color-surface-container-high: #2a2a28;
+  --color-surface-container-highest: #353533;
+  --color-primary: #ffffff;
+  --color-on-primary: #422646;
+  --color-primary-container: #fed6ff;
+  --color-on-primary-container: #7a5a7d;
+  --color-secondary: #fcb2c6;
+  --color-secondary-container: #6e3849;
+  --color-tertiary-container: #f2e483;
+  --color-tertiary-fixed-dim: #d5c86a;
+  --color-error-container: #93000a;
+  --color-pastel-lavender: #E6E6FA;
+  --color-pastel-mint: #D4F1F4;
+  --color-pale-cream: #FDF5E6;
+  --color-muted-grey: #9CA3AF;
+
+  --font-display: 'Climate Crisis', sans-serif;
+  --font-headline: 'Climate Crisis', sans-serif;
+  --font-body: 'Bebas Neue', sans-serif;
+  --font-label: 'Be Vietnam Pro', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #282828; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #444444; }
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+@media (max-width: 640px) {
+  body {
+    -webkit-text-size-adjust: 100%;
+  }
+}
+
+/* Fluid responsive padding and typography helpers */
+.responsive-container {
+  width: 100%;
+  max-width: 100%;
+  padding-left: env(safe-area-inset-left, 1rem);
+  padding-right: env(safe-area-inset-right, 1rem);
+}
+
+
