@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../lib/firebase';
 import { 
   createUserWithEmailAndPassword, 
@@ -10,19 +10,33 @@ import {
   signInAnonymously
 } from 'firebase/auth';
 
+interface ErrorDetail {
+  title: string;
+  message: string;
+  code?: string;
+  actionText?: string;
+  actionType?: 'copy_domain' | 'switch_email';
+}
+
 export const AuthTab = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
+  const [errorDetail, setErrorDetail] = useState<ErrorDetail | null>(null);
+  const [domainCopied, setDomainCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
 
-  const getFriendlyErrorMessage = (errCode: string, isSignUpMode: boolean) => {
+  const getFriendlyErrorMessage = (errCode: string, isSignUpMode: boolean, rawMessage?: string) => {
     switch (errCode) {
+      case 'auth/unauthorized-domain':
+        return `Domain not authorized in Firebase: "${window.location.hostname}". Add this domain to Firebase Console > Authentication > Settings > Authorized domains.`;
+      case 'auth/operation-not-allowed':
+        return 'Google Sign-In is not enabled in your Firebase Console. Please enable Google in Firebase Console > Authentication > Sign-in method.';
       case 'auth/admin-restricted-operation':
-        return 'Anonymous sign-in is disabled in your Firebase project console. Please enable Anonymous auth in Firebase Authentication settings, or sign in with Email / Google.';
+        return 'Anonymous sign-in is disabled in your Firebase Console. Please enable Anonymous auth in Authentication settings, or sign in with Email / Google.';
       case 'auth/invalid-credential':
       case 'auth/wrong-password':
       case 'auth/user-not-found':
@@ -36,20 +50,22 @@ export const AuthTab = () => {
       case 'auth/invalid-email':
         return 'Please enter a valid email address.';
       case 'auth/popup-closed-by-user':
+        return 'Sign-in popup was closed before completing. Please try again.';
       case 'auth/cancelled-popup-request':
-        return 'Sign-in popup was closed before completing.';
+        return 'Sign-in popup request was cancelled or closed. Click Continue with Google to retry.';
       case 'auth/popup-blocked':
         return 'Popups are blocked by your browser. Please allow popups or use email sign-in.';
       case 'auth/network-request-failed':
         return 'Network connection error. Please check your internet connection.';
       default:
-        return 'Failed to authenticate. Please check your credentials and try again.';
+        return rawMessage || 'Failed to authenticate. Please check your credentials and try again.';
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setErrorDetail(null);
     setLoading(true);
 
     try {
@@ -69,7 +85,7 @@ export const AuthTab = () => {
     } catch (err: any) {
       console.error('Auth error:', err);
       const code = err?.code || '';
-      setError(getFriendlyErrorMessage(code, isSignUp));
+      setError(getFriendlyErrorMessage(code, isSignUp, err?.message));
     } finally {
       setLoading(false);
     }
@@ -77,15 +93,54 @@ export const AuthTab = () => {
 
   const handleGoogleSignIn = async () => {
     setError('');
+    setErrorDetail(null);
     setSocialLoading('google');
+
     try {
       const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
+      provider.addScope('email');
+      provider.addScope('profile');
+      provider.setCustomParameters({ 
+        prompt: 'select_account' 
+      });
+
       await signInWithPopup(auth, provider);
     } catch (err: any) {
       console.error('Google sign-in error:', err);
       const code = err?.code || '';
-      setError(getFriendlyErrorMessage(code, false));
+      const message = err?.message || '';
+
+      if (code === 'auth/unauthorized-domain') {
+        setErrorDetail({
+          title: 'Authorized Domain Setup Required',
+          message: `Firebase requires this domain to be authorized before Google Sign-In can work:`,
+          code: window.location.hostname,
+          actionText: domainCopied ? 'Domain Copied!' : 'Copy Domain to Add in Firebase',
+          actionType: 'copy_domain'
+        });
+      } else if (code === 'auth/operation-not-allowed') {
+        setErrorDetail({
+          title: 'Google Provider Disabled in Firebase',
+          message: 'Google Sign-In is disabled in your Firebase project. Go to Firebase Console > Authentication > Sign-in method and enable Google.',
+          actionText: 'Use Email Sign-In',
+          actionType: 'switch_email'
+        });
+      } else if (code === 'auth/popup-blocked') {
+        setErrorDetail({
+          title: 'Browser Blocked the Google Popup',
+          message: 'Your browser or iframe environment blocked the popup window. Look for the popup blocker icon in your browser address bar to allow popups, or use Email Sign-In below.',
+        });
+      } else if (code === 'auth/popup-closed-by-user') {
+        setErrorDetail({
+          title: 'Google Sign-In Cancelled',
+          message: 'The sign-in window was closed before finishing. Click Continue with Google to try again.',
+        });
+      } else {
+        setErrorDetail({
+          title: 'Google Sign-In Issue',
+          message: getFriendlyErrorMessage(code, false, message),
+        });
+      }
     } finally {
       setSocialLoading(null);
     }
@@ -93,6 +148,7 @@ export const AuthTab = () => {
 
   const handleGuestSignIn = async () => {
     setError('');
+    setErrorDetail(null);
     setSocialLoading('guest');
     try {
       const userCredential = await signInAnonymously(auth);
@@ -100,25 +156,55 @@ export const AuthTab = () => {
     } catch (err: any) {
       console.error('Guest sign-in error:', err);
       const code = err?.code || '';
-      setError(getFriendlyErrorMessage(code, false));
+      setError(getFriendlyErrorMessage(code, false, err?.message));
     } finally {
       setSocialLoading(null);
     }
   };
 
+  const handleQuickDemoLogin = async (demoEmail: string, demoPass: string, demoName: string) => {
+    setError('');
+    setErrorDetail(null);
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, demoEmail, demoPass);
+    } catch (err: any) {
+      if (err?.code === 'auth/user-not-found' || err?.code === 'auth/invalid-credential') {
+        // Auto-create demo user if it doesn't exist yet
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, demoEmail, demoPass);
+          await updateProfile(cred.user, { displayName: demoName });
+        } catch (createErr: any) {
+          setError(getFriendlyErrorMessage(createErr?.code || '', true, createErr?.message));
+        }
+      } else {
+        setError(getFriendlyErrorMessage(err?.code || '', false, err?.message));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyDomain = () => {
+    navigator.clipboard.writeText(window.location.hostname);
+    setDomainCopied(true);
+    setTimeout(() => setDomainCopied(false), 3000);
+  };
+
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-6 py-12">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 py-10">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-surface-container-high/60 backdrop-blur-xl border border-white/10 rounded-[32px] p-8 md:p-12 w-full max-w-md shadow-2xl relative overflow-hidden"
+        className="bg-surface-container-high/70 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 sm:p-10 w-full max-w-md shadow-2xl relative overflow-hidden text-pale-cream"
       >
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary-container via-pastel-mint to-tertiary-container"></div>
-        <h2 className="font-display text-4xl text-pale-cream mb-2 text-center drop-shadow-sm">
+        
+        <h2 className="font-display text-3xl sm:text-4xl text-pale-cream mb-2 text-center drop-shadow-sm">
           {isSignUp ? 'Join Vibra' : 'Welcome Back'}
         </h2>
-        <p className="font-body text-muted-grey text-center mb-6 tracking-wider text-base md:text-lg">
-          {isSignUp ? 'Create an account to save your vibes.' : 'Sign in to access your library.'}
+        <p className="font-body text-muted-grey text-center mb-6 tracking-wider text-sm sm:text-base">
+          {isSignUp ? 'Create an account to save your vibes & mixtapes.' : 'Sign in to sync your library across devices.'}
         </p>
 
         {/* Quick Sign In Options */}
@@ -128,19 +214,19 @@ export const AuthTab = () => {
             id="google-signin-btn"
             disabled={loading || socialLoading !== null}
             onClick={handleGoogleSignIn}
-            className="flex items-center justify-center gap-3 bg-white/10 hover:bg-white/15 active:scale-[0.98] border border-white/15 text-pale-cream rounded-full py-3.5 px-6 font-label text-sm tracking-wider transition-all cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-center gap-3 bg-white/10 hover:bg-white/15 active:scale-[0.98] border border-white/15 text-pale-cream rounded-full py-3.5 px-6 font-label text-sm tracking-wider transition-all cursor-pointer disabled:opacity-50 shadow-md"
           >
             {socialLoading === 'google' ? (
               <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
             ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                 <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
                 <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z" />
                 <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12 0 12s.7 2.3 1.9 4.7l3.7-2.9z" />
                 <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16c1.8 3.7 5.6 7 10.1 7z" />
               </svg>
             )}
-            <span>{socialLoading === 'google' ? 'Connecting...' : 'Continue with Google'}</span>
+            <span>{socialLoading === 'google' ? 'Opening Google...' : 'Continue with Google'}</span>
           </button>
 
           <button
@@ -159,21 +245,64 @@ export const AuthTab = () => {
           </button>
         </div>
 
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex-1 h-px bg-white/10"></div>
-          <span className="font-label text-xs text-muted-grey tracking-widest uppercase">or email</span>
-          <div className="flex-1 h-px bg-white/10"></div>
-        </div>
+        {/* Actionable Error Card (with Domain Copy & Direct Solutions) */}
+        <AnimatePresence>
+          {errorDetail && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-amber-950/40 border border-amber-500/40 rounded-2xl p-4 mb-6 text-xs text-amber-200/90 leading-relaxed shadow-lg space-y-2.5"
+            >
+              <div className="flex items-start gap-2">
+                <span className="material-symbols-outlined text-amber-400 text-lg shrink-0">info</span>
+                <strong className="font-semibold text-amber-100 text-sm">{errorDetail.title}</strong>
+              </div>
+              <p>{errorDetail.message}</p>
+              
+              {errorDetail.code && (
+                <div className="bg-black/40 border border-amber-500/30 rounded-xl p-2.5 font-mono text-[11px] text-amber-300 break-all select-all flex items-center justify-between gap-2">
+                  <span>{errorDetail.code}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyDomain}
+                    className="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-[10px] font-bold uppercase transition-colors shrink-0 cursor-pointer"
+                  >
+                    {domainCopied ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+              )}
 
-        {error && (
+              {errorDetail.actionType === 'copy_domain' && (
+                <div className="text-[11px] text-amber-300/80 pt-1 border-t border-amber-500/20 space-y-1">
+                  <p><strong>To resolve in Firebase:</strong></p>
+                  <ol className="list-decimal list-inside space-y-0.5 pl-1">
+                    <li>Copy domain above</li>
+                    <li>Open Firebase Console &gt; Authentication &gt; Settings</li>
+                    <li>Under "Authorized domains", click "Add domain" and paste.</li>
+                  </ol>
+                  <p className="pt-1 text-pale-cream/90 font-medium">Or use 1-click Email Login below!</p>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {error && !errorDetail && (
           <motion.div 
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-error-container bg-error-container/10 border border-error-container/20 p-3.5 rounded-2xl mb-6 font-body text-sm text-center leading-relaxed"
+            className="text-error-container bg-error-container/10 border border-error-container/20 p-3.5 rounded-2xl mb-6 font-body text-xs sm:text-sm text-center leading-relaxed"
           >
             {error}
           </motion.div>
         )}
+
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex-1 h-px bg-white/10"></div>
+          <span className="font-label text-xs text-muted-grey tracking-widest uppercase">or sign in with email</span>
+          <div className="flex-1 h-px bg-white/10"></div>
+        </div>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           {isSignUp && (
@@ -183,7 +312,7 @@ export const AuthTab = () => {
                 type="text" 
                 value={username} 
                 onChange={(e) => setUsername(e.target.value)} 
-                className="bg-surface-container/80 text-pale-cream rounded-full px-5 py-3 border border-white/5 focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all font-body text-base" 
+                className="bg-surface-container/80 text-pale-cream rounded-full px-5 py-3 border border-white/5 focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all font-body text-sm sm:text-base placeholder:text-muted-grey/60" 
                 placeholder="VibeMaster99" 
                 required 
               />
@@ -195,7 +324,7 @@ export const AuthTab = () => {
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
-              className="bg-surface-container/80 text-pale-cream rounded-full px-5 py-3 border border-white/5 focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all font-body text-base" 
+              className="bg-surface-container/80 text-pale-cream rounded-full px-5 py-3 border border-white/5 focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all font-body text-sm sm:text-base placeholder:text-muted-grey/60" 
               placeholder="your@email.com" 
               required 
             />
@@ -206,7 +335,7 @@ export const AuthTab = () => {
               type="password" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
-              className="bg-surface-container/80 text-pale-cream rounded-full px-5 py-3 border border-white/5 focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all font-body text-base" 
+              className="bg-surface-container/80 text-pale-cream rounded-full px-5 py-3 border border-white/5 focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all font-body text-sm sm:text-base placeholder:text-muted-grey/60" 
               placeholder="•••••••• (min. 6 characters)" 
               required 
             />
@@ -222,6 +351,33 @@ export const AuthTab = () => {
           </button>
         </form>
 
+        {/* 1-Click Fast Login Shortcuts */}
+        <div className="mt-5 pt-4 border-t border-white/10 flex flex-col gap-2">
+          <span className="text-[11px] font-mono text-muted-grey text-center uppercase tracking-wider">
+            Quick Instant Login
+          </span>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => handleQuickDemoLogin('beatzapp.team@gmail.com', 'AdminPass2026!', 'Vibra Admin')}
+              disabled={loading}
+              className="px-3 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-primary-container/30 text-primary-container text-[11px] font-mono font-bold tracking-wide truncate transition-all cursor-pointer disabled:opacity-50"
+              title="Sign in as beatzapp.team@gmail.com"
+            >
+              👑 Admin Account
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickDemoLogin('listener@vibra.app', 'VibraPass2026!', 'Swiftie Listener')}
+              disabled={loading}
+              className="px-3 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-white/10 text-pale-cream text-[11px] font-mono font-bold tracking-wide truncate transition-all cursor-pointer disabled:opacity-50"
+              title="Sign in as Demo Listener"
+            >
+              🎧 Demo Listener
+            </button>
+          </div>
+        </div>
+
         <div className="mt-6 text-center">
           <p className="font-body text-sm md:text-base text-muted-grey tracking-wide">
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
@@ -230,6 +386,7 @@ export const AuthTab = () => {
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setError('');
+                setErrorDetail(null);
               }} 
               className="text-primary-container hover:text-pale-cream font-bold underline underline-offset-4 ml-1 transition-colors cursor-pointer"
             >
@@ -241,5 +398,3 @@ export const AuthTab = () => {
     </div>
   );
 };
-
-
