@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 
 export const IntroTab = ({ onEnter }: { onEnter: () => void }) => {
   return (
-    <div className="fixed inset-0 min-h-[100dvh] w-full flex flex-col items-center justify-center overflow-hidden bg-[#131312]/60 backdrop-blur-md z-[100]">
+    <div className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden bg-black/25 z-[100]">
       <div className="relative z-10 flex flex-col items-center text-center px-6 w-full max-w-lg">
         <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.95 }}

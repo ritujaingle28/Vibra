@@ -76,7 +76,7 @@ export default function App() {
   return (
     <div className="bg-transparent text-pale-cream font-body h-screen flex overflow-hidden relative selection:bg-primary-container selection:text-on-primary-container">
       {/* Background Image */}
-      <div className="fixed inset-0 w-full h-full -z-10 pointer-events-none">
+      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none overflow-hidden">
         <img
           alt="Background collage"
           className="w-full h-full object-cover"
@@ -88,7 +88,7 @@ export default function App() {
             }
           }}
         />
-        <div className="absolute inset-0 bg-surface/50"></div>
+        <div className="absolute inset-0 bg-black/35"></div>
       </div>
 
       {activeTab !== 'intro' && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onProfileClick={handleProfileClick} isLoggedIn={isLoggedIn} avatarUrl={avatarUrl} />}
@@ -100,7 +100,7 @@ export default function App() {
         <div className="hidden md:block fixed top-0 left-0 right-0 h-16 bg-surface/75 backdrop-blur-xl border-b border-white/5 z-30 pointer-events-none" />
       )}
 
-      <main className="flex-1 w-full overflow-y-auto relative pb-44 md:pb-24 md:pt-16">
+      <main className="flex-1 w-full overflow-y-auto relative z-10 pb-44 md:pb-24 md:pt-16">
         {activeTab === 'intro' && <IntroTab onEnter={() => setActiveTab('auth')} />}
         {activeTab === 'home' && <HomeTab onProfileClick={handleProfileClick} onSearchClick={() => setActiveTab('search')} onNavigateToGenerate={() => setActiveTab('generate')} avatarUrl={avatarUrl} isLoggedIn={isLoggedIn} />}
         {activeTab === 'search' && <SearchTab />}
