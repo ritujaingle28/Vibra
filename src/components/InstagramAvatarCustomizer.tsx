@@ -771,7 +771,7 @@ export const InstagramAvatarCustomizer: React.FC<InstagramAvatarCustomizerProps>
           </div>
 
           <span className="text-xs font-label font-bold text-pale-cream/80 mt-3 tracking-wider uppercase">
-            Preview on Beatz
+            Preview on Vibra
           </span>
         </div>
 

@@ -71,7 +71,7 @@ export const AdminLoginsModal: React.FC<AdminLoginsModalProps> = ({
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(logins, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `beatz_user_logins_${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.setAttribute('download', `vibra_user_logins_${new Date().toISOString().slice(0, 10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -172,7 +172,7 @@ export const AdminLoginsModal: React.FC<AdminLoginsModalProps> = ({
               <div className="py-16 text-center text-muted-grey">
                 <span className="material-symbols-outlined text-4xl mb-2 opacity-40">badge</span>
                 <p className="font-display text-base">No user login records match your filter</p>
-                <p className="text-xs mt-1">Users will appear here in real time as they log into Beatz.</p>
+                <p className="text-xs mt-1">Users will appear here in real time as they log into Vibra.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -205,7 +205,7 @@ export const AdminLoginsModal: React.FC<AdminLoginsModalProps> = ({
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
                               <h4 className="font-display text-sm sm:text-base text-pale-cream truncate">
-                                {record.displayName || 'Beatz User'}
+                                {record.displayName || 'Vibra User'}
                               </h4>
                               <span
                                 className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full font-bold border ${

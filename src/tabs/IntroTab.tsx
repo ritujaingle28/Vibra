@@ -16,7 +16,7 @@ export const IntroTab = ({ onEnter }: { onEnter: () => void }) => {
             <div className="absolute inset-0 bg-pastel-lavender/20 animate-pulse rounded-full"></div>
           </div>
           <h1 className="font-display text-6xl md:text-8xl text-pale-cream drop-shadow-2xl mb-6 tracking-widest uppercase">
-            Beatz
+            Vibra
           </h1>
           <p className="font-body text-xl md:text-2xl text-pastel-lavender tracking-widest uppercase drop-shadow-md">
             Atmospheric Audio

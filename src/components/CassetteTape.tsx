@@ -161,7 +161,7 @@ export const CassetteTape: React.FC<CassetteTapeProps> = ({
           <span className="w-1.5 h-1.5 rounded-full bg-red-400/80 animate-pulse" />
           HIGH BIAS 70µs EQ
         </span>
-        <span className="font-bold text-white/70">BEATZ C-60</span>
+        <span className="font-bold text-white/70">VIBRA C-60</span>
         <span className="bg-white/10 px-1.5 py-0.5 rounded text-[9px] font-bold text-white/90">SIDE A</span>
       </div>
 

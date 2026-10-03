@@ -115,7 +115,7 @@ export const AuthTab = () => {
       >
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary-container via-pastel-mint to-tertiary-container"></div>
         <h2 className="font-display text-4xl text-pale-cream mb-2 text-center drop-shadow-sm">
-          {isSignUp ? 'Join Beatz' : 'Welcome Back'}
+          {isSignUp ? 'Join Vibra' : 'Welcome Back'}
         </h2>
         <p className="font-body text-muted-grey text-center mb-6 tracking-wider text-base md:text-lg">
           {isSignUp ? 'Create an account to save your vibes.' : 'Sign in to access your library.'}

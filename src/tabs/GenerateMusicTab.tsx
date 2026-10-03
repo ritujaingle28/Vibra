@@ -342,7 +342,7 @@ export const GenerateMusicTab: React.FC<{ onNavigateToLibrary?: () => void }> = 
       createdAt: track.createdAt
     };
     playTrack(playerTrack);
-    showToast(`Playing "${track.title}" in Beatz Player! 🎵`, 'success');
+    showToast(`Playing "${track.title}" in Vibra Player! 🎵`, 'success');
   };
 
   // Download WAV file
@@ -834,7 +834,7 @@ export const GenerateMusicTab: React.FC<{ onNavigateToLibrary?: () => void }> = 
                       className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-primary-container to-pastel-lavender text-on-primary-container font-label text-sm font-bold tracking-wider hover:opacity-95 active:scale-98 transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer"
                     >
                       <span className="material-symbols-outlined text-xl">play_circle</span>
-                      {latestGenerated.isMashup ? 'Play Studio Mashup in Beatz Player' : 'Play Exact Song in Beatz Player'}
+                      {latestGenerated.isMashup ? 'Play Studio Mashup in Vibra Player' : 'Play Exact Song in Vibra Player'}
                     </button>
                     <p className="text-[11px] text-muted-grey font-body">
                       Plays authentic multi-artist studio recording with full video and real-time synchronized lyrics.

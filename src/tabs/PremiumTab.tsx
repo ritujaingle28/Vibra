@@ -60,7 +60,7 @@ export const PremiumTab = () => {
           className="bg-surface-container-low/80 backdrop-blur-md rounded-[32px] border border-white/10 p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl"
         >
           <div className="flex-1">
-            <h2 className="font-headline text-3xl text-pale-cream mb-6">Beatz Premium</h2>
+            <h2 className="font-headline text-3xl text-pale-cream mb-6">Vibra Premium</h2>
             <ul className="flex flex-col gap-4 font-body text-lg text-muted-grey tracking-wide">
               <li className="flex items-center gap-3"><span className="material-symbols-outlined text-primary-container text-xl font-bold">check</span> Highest audio quality</li>
               <li className="flex items-center gap-3"><span className="material-symbols-outlined text-primary-container text-xl font-bold">check</span> Listen with friends in real-time</li>

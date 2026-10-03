@@ -106,7 +106,7 @@ export const Sidebar = ({
               )}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="font-display text-2xl text-pastel-lavender drop-shadow-sm leading-tight">Beatz</span>
+              <span className="font-display text-2xl text-pastel-lavender drop-shadow-sm leading-tight">Vibra</span>
               <span className="font-label text-[10px] text-muted-grey uppercase tracking-wider group-hover:text-primary-container transition-colors truncate">
                 {isLoggedIn ? 'Your Profile' : 'Sign In / Join'}
               </span>

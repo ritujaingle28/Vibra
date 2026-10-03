@@ -49,7 +49,7 @@ export const CassetteLoveLetter: React.FC<CassetteLoveLetterProps> = ({
             <span className="text-[8px] font-mono uppercase font-bold text-rose-900/70 mt-1">Air Mail</span>
           </div>
           <div className="w-10 h-10 rounded-full border border-stone-800/30 flex items-center justify-center -rotate-12 text-[7px] font-mono uppercase text-stone-700/60 text-center leading-tight">
-            BEATZ
+            VIBRA
             <br />
             SPECIAL
           </div>

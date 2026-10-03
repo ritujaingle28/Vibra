@@ -16,7 +16,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, track, onClose, 
 
   const trackUrl = `${window.location.origin}/?track=${track.id}`;
   const ytUrl = `https://www.youtube.com/watch?v=${track.id}`;
-  const shareText = `🎵 Listening to "${track.title}" by ${track.channel} on Beatz!`;
+  const shareText = `🎵 Listening to "${track.title}" by ${track.channel} on Vibra!`;
 
   const handleCopyLink = async () => {
     try {

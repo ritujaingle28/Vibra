@@ -251,7 +251,7 @@ export const ProfileTab = ({ avatarUrl, onAvatarChange, onNavigate, isLoggedIn }
             <span className="material-symbols-outlined text-xl">arrow_back</span>
           </button>
           <span className="font-mono text-xs text-pale-cream/80 bg-black/40 px-3 py-1 rounded-full backdrop-blur-md uppercase tracking-widest border border-white/10">
-            Beatz Profile Hub
+            Vibra Profile Hub
           </span>
         </div>
       </div>
@@ -1393,7 +1393,7 @@ export const ProfileTab = ({ avatarUrl, onAvatarChange, onNavigate, isLoggedIn }
             <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-950/80 via-pink-950/60 to-surface-container-high border border-primary-container/30 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <span className="font-mono text-xs text-primary-container uppercase font-bold tracking-widest">
-                  BEATZ PREMIUM PASS
+                  VIBRA PREMIUM PASS
                 </span>
                 <h4 className="font-display text-2xl text-pale-cream mt-0.5">Unlock Lossless Audio & Offline Modes</h4>
                 <p className="font-body text-xs text-muted-grey mt-1">Unlimited skips, studio mastering equalizer & exclusive live recordings.</p>
