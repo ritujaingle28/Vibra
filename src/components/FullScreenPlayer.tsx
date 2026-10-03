@@ -208,13 +208,13 @@ export const FullScreenPlayer: React.FC = () => {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-          className="fixed inset-0 z-[120] overflow-y-auto select-none"
+          className="fixed inset-0 z-[120] overflow-y-auto select-none min-h-[100dvh] h-[100dvh]"
           style={{ background: backgroundGradient }}
         >
           {/* Ambient Lighting Glows */}
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary-container/10 rounded-full blur-3xl pointer-events-none -z-0"></div>
 
-          <div className="min-h-full flex flex-col justify-between px-4 py-5 md:px-8 md:py-8 w-full max-w-2xl mx-auto relative z-10">
+          <div className="min-h-[100dvh] flex flex-col justify-between px-4 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] md:px-8 md:py-8 w-full max-w-2xl mx-auto relative z-10">
             {/* Top Navigation Header */}
             <div className="flex items-center justify-between mb-4">
               <button

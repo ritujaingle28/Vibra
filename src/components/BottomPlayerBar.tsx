@@ -26,7 +26,7 @@ export const BottomPlayerBar: React.FC = () => {
   return (
     <div
       onClick={openFullScreenPlayer}
-      className="fixed bottom-[72px] md:bottom-4 left-3 right-3 md:left-64 md:right-8 z-40 bg-surface-container-highest/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2.5 shadow-2xl flex items-center justify-between cursor-pointer hover:bg-surface-container-highest transition-all group overflow-hidden"
+      className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+72px)] md:bottom-4 left-3 right-3 md:left-64 md:right-8 z-40 bg-surface-container-highest/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2.5 shadow-2xl flex items-center justify-between cursor-pointer hover:bg-surface-container-highest transition-all group overflow-hidden"
     >
       {/* Top Thin Progress Line */}
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/10">

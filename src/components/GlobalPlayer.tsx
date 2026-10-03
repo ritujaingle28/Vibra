@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import YouTube, { YouTubeProps } from 'react-youtube';
-import { usePlayer, Track } from '../context/PlayerContext';
+import { usePlayer } from '../context/PlayerContext';
 
 export const GlobalPlayer: React.FC = () => {
   const {
@@ -20,8 +20,8 @@ export const GlobalPlayer: React.FC = () => {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const ytPlayerRef = useRef<any>(null);
-  const [ytReady, setYtReady] = useState(false);
-  const [activeVideoId, setActiveVideoId] = useState<string>(currentTrack?.id || 'ic8j13piAhQ');
+  const [, setYtReady] = useState(false);
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(currentTrack?.id || null);
   const lastTrackIdRef = useRef<string | null>(null);
 
   // Determine if active track is an audioUrl track (e.g. custom AI-generated vocal track) or a YouTube track
@@ -29,11 +29,20 @@ export const GlobalPlayer: React.FC = () => {
     currentTrack?.audioUrl &&
     (!currentTrack?.id || currentTrack.id.startsWith('lyria-') || currentTrack.id.startsWith('audio-'))
   );
-  const isYouTubeTrack = !isCustomAudioTrack && Boolean(currentTrack?.id && !currentTrack.id.startsWith('lyria-') && !currentTrack.id.startsWith('audio-'));
+  const isYouTubeTrack = Boolean(
+    currentTrack &&
+    !isCustomAudioTrack &&
+    currentTrack.id &&
+    !currentTrack.id.startsWith('lyria-') &&
+    !currentTrack.id.startsWith('audio-')
+  );
 
   // Sync activeVideoId when currentTrack changes
   useEffect(() => {
-    if (!currentTrack || isCustomAudioTrack) return;
+    if (!currentTrack || isCustomAudioTrack) {
+      setActiveVideoId(null);
+      return;
+    }
 
     const newVideoId = currentTrack.id;
     if (newVideoId && newVideoId !== lastTrackIdRef.current) {
@@ -101,31 +110,20 @@ export const GlobalPlayer: React.FC = () => {
     }
   }, [seekRequest, isYouTubeTrack, clearSeekRequest]);
 
-  // High-frequency polling (100ms) for exact lyrics synchronization with YouTube playback
+  // Continuous Playhead & Duration Time Synchronization
   useEffect(() => {
-    if (!isYouTubeTrack || !isPlaying) return;
+    if (!currentTrack || !isPlaying) return;
 
     const timer = setInterval(() => {
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
+      if (isYouTubeTrack && ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
         try {
           const cur = ytPlayerRef.current.getCurrentTime();
           const dur = ytPlayerRef.current.getDuration();
           if (typeof cur === 'number' && !isNaN(cur) && cur >= 0) {
-            updateTime(cur, typeof dur === 'number' && dur > 0 ? dur : 180);
+            updateTime(cur, typeof dur === 'number' && dur > 0 ? dur : 210);
           }
         } catch {}
-      }
-    }, 100);
-
-    return () => clearInterval(timer);
-  }, [isYouTubeTrack, isPlaying, updateTime]);
-
-  // High-frequency polling (100ms) for exact lyrics synchronization with HTML5 audio playback
-  useEffect(() => {
-    if (!isCustomAudioTrack || !isPlaying) return;
-
-    const timer = setInterval(() => {
-      if (audioRef.current && !audioRef.current.paused) {
+      } else if (isCustomAudioTrack && audioRef.current) {
         const cur = audioRef.current.currentTime;
         const dur = audioRef.current.duration;
         if (typeof cur === 'number' && !isNaN(cur) && cur >= 0) {
@@ -135,7 +133,7 @@ export const GlobalPlayer: React.FC = () => {
     }, 100);
 
     return () => clearInterval(timer);
-  }, [isCustomAudioTrack, isPlaying, updateTime]);
+  }, [isYouTubeTrack, isCustomAudioTrack, isPlaying, updateTime, currentTrack]);
 
   // HTML5 Audio playback for custom AI tracks (e.g. Lyria tracks with direct audioUrl)
   useEffect(() => {
@@ -168,13 +166,21 @@ export const GlobalPlayer: React.FC = () => {
     try {
       event.target.setVolume(isMuted ? 0 : Math.round(volume * 100));
       if (isMuted) event.target.mute();
-      if (isPlaying) {
+      if (isPlaying && currentTrack) {
         event.target.playVideo();
+      } else {
+        event.target.pauseVideo();
       }
     } catch {}
   };
 
   const handleYTStateChange: YouTubeProps['onStateChange'] = (event) => {
+    if (!currentTrack) {
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.pauseVideo(); } catch {}
+      }
+      return;
+    }
     // 1: PLAYING, 2: PAUSED, 0: ENDED, 3: BUFFERING
     if (event.data === 1) {
       setPlayerState(true);
@@ -190,7 +196,7 @@ export const GlobalPlayer: React.FC = () => {
     }
   };
 
-  // Robust error recovery: if a video ID is embed-restricted, fetch alternative playable version of the SAME song
+  // Error recovery: if a video ID is embed-restricted, fetch alternative playable version of the SAME song
   const handleYTError: YouTubeProps['onError'] = async (err) => {
     console.warn("YouTube player encountered error:", err);
     if (currentTrack) {
@@ -214,28 +220,20 @@ export const GlobalPlayer: React.FC = () => {
     }
   };
 
+  // If no track is actively queued or selected, do NOT mount audio or YouTube
+  if (!currentTrack) {
+    return null;
+  }
+
   const showVideoInFullscreen = isPlayerExpanded && activeViewMode === 'video' && isYouTubeTrack;
 
   return (
     <>
-      {/* HTML5 Audio element for custom generated tracks */}
+      {/* HTML5 Audio Player for custom uploaded / Lyria AI synthesized audio streams */}
       {isCustomAudioTrack && (
         <audio
           ref={audioRef}
-          loop={repeatMode === 'one'}
           preload="auto"
-          onCanPlay={() => {
-            if (isPlaying && audioRef.current && audioRef.current.paused) {
-              audioRef.current.play().catch(() => {});
-            }
-          }}
-          onPlaying={() => setPlayerState(true)}
-          onTimeUpdate={(e) => {
-            const target = e.currentTarget;
-            if (target.duration > 0) {
-              updateTime(target.currentTime, target.duration);
-            }
-          }}
           onEnded={() => {
             if (repeatMode === 'one') {
               if (audioRef.current) {
@@ -250,38 +248,40 @@ export const GlobalPlayer: React.FC = () => {
         />
       )}
 
-      {/* Real YouTube Player: Stably mounted with valid dimensions (never 1x1 or opacity 0) */}
-      <div
-        id="vibra-youtube-dock"
-        className={`transition-all duration-300 ${
-          showVideoInFullscreen
-            ? 'fixed inset-x-4 top-28 bottom-36 md:inset-x-24 md:top-32 md:bottom-40 z-[90] rounded-3xl overflow-hidden shadow-2xl bg-black border border-white/20'
-            : 'fixed -bottom-[999px] -right-[999px] w-[320px] h-[240px] pointer-events-none'
-        }`}
-      >
-        <YouTube
-          videoId={activeVideoId}
-          opts={{
-            height: '100%',
-            width: '100%',
-            playerVars: {
-              autoplay: 1,
-              controls: showVideoInFullscreen ? 1 : 0,
-              disablekb: showVideoInFullscreen ? 0 : 1,
-              fs: showVideoInFullscreen ? 1 : 0,
-              modestbranding: 1,
-              rel: 0,
-              playsinline: 1,
-              enablejsapi: 1
-            }
-          }}
-          className="w-full h-full"
-          iframeClassName="w-full h-full object-cover rounded-2xl"
-          onReady={handleYTReady}
-          onStateChange={handleYTStateChange}
-          onError={handleYTError}
-        />
-      </div>
+      {/* Real YouTube Player: Mounted only when a valid YouTube track is selected */}
+      {isYouTubeTrack && activeVideoId && (
+        <div
+          id="vibra-youtube-dock"
+          className={`transition-all duration-300 ${
+            showVideoInFullscreen
+              ? 'fixed inset-x-4 top-28 bottom-36 md:inset-x-24 md:top-32 md:bottom-40 z-[90] rounded-3xl overflow-hidden shadow-2xl bg-black border border-white/20'
+              : 'fixed -bottom-[999px] -right-[999px] w-[320px] h-[240px] pointer-events-none'
+          }`}
+        >
+          <YouTube
+            videoId={activeVideoId}
+            opts={{
+              height: '100%',
+              width: '100%',
+              playerVars: {
+                autoplay: isPlaying ? 1 : 0,
+                controls: showVideoInFullscreen ? 1 : 0,
+                disablekb: showVideoInFullscreen ? 0 : 1,
+                fs: showVideoInFullscreen ? 1 : 0,
+                modestbranding: 1,
+                rel: 0,
+                playsinline: 1,
+                enablejsapi: 1
+              }
+            }}
+            className="w-full h-full"
+            iframeClassName="w-full h-full object-cover rounded-2xl"
+            onReady={handleYTReady}
+            onStateChange={handleYTStateChange}
+            onError={handleYTError}
+          />
+        </div>
+      )}
     </>
   );
 };

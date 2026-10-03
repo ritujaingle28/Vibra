@@ -32,7 +32,14 @@ export default function App() {
     localStorage.setItem('user_avatar_url', newUrl);
   };
 
-  const { isShareModalOpen, sharingTrack, closeShareModal, toast, showToast } = usePlayer();
+  const { isShareModalOpen, sharingTrack, closeShareModal, toast, showToast, stopPlayback } = usePlayer();
+
+  // Ensure music is never playing during initial intro or sign-in process
+  useEffect(() => {
+    if (activeTab === 'intro' || activeTab === 'auth') {
+      stopPlayback();
+    }
+  }, [activeTab, stopPlayback]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -79,7 +86,7 @@ export default function App() {
 
       {activeTab !== 'intro' && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onProfileClick={handleProfileClick} isLoggedIn={isLoggedIn} avatarUrl={avatarUrl} />}
       {activeTab !== 'intro' && <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />}
-      {activeTab !== 'intro' && <GlobalPlayer />}
+      {activeTab !== 'intro' && activeTab !== 'auth' && <GlobalPlayer />}
 
       {/* Desktop Top Header Bar backdrop to ensure Three Lines Menu never overlays text */}
       {activeTab !== 'intro' && (
@@ -98,8 +105,8 @@ export default function App() {
         {activeTab === 'profile' && <ProfileTab avatarUrl={avatarUrl} onAvatarChange={handleAvatarChange} onNavigate={setActiveTab} isLoggedIn={isLoggedIn} />}
       </main>
 
-      {activeTab !== 'intro' && <BottomPlayerBar />}
-      {activeTab !== 'intro' && <FullScreenPlayer />}
+      {activeTab !== 'intro' && activeTab !== 'auth' && <BottomPlayerBar />}
+      {activeTab !== 'intro' && activeTab !== 'auth' && <FullScreenPlayer />}
 
       <Toast toast={toast} />
       <ShareModal

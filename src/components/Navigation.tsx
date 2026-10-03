@@ -200,7 +200,7 @@ export const BottomNav = ({ activeTab, setActiveTab }: { activeTab: string; setA
   return (
     <nav
       id="bottom-navigation-bar"
-      className="md:hidden fixed bottom-3 left-2 right-2 z-40 max-w-lg mx-auto bg-surface-container-high/90 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] px-1 py-1 grid grid-cols-7 items-center gap-0.5"
+      className="md:hidden fixed bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] left-2 right-2 z-40 max-w-lg mx-auto bg-surface-container-high/90 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] px-1 py-1 grid grid-cols-7 items-center gap-0.5"
     >
       {navItems.map(item => {
         const isActive = activeTab === item.id;
