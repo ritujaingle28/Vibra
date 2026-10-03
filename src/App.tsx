@@ -80,6 +80,10 @@ export default function App() {
           alt="Background collage"
           className="w-full h-full object-cover"
           src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWqtLP925kTEI7_J__UokCOU2wzNNYgR_6nhzGvl0_I2AUT5KGF2mtyUWE2kFv-hF2uTChd_IU7hVyW0mUQl-l6OkIZHikUt-XfarLZkMqsjAgeq2lAQ4VVKUqHCjJZgzQqjeDNIo-NYoTQd6JE6Xps3gd8Z2dRPuIYpAyinWFwivRi3YrRPx6RUeoFGnZmzn6GUMAz4hAexqL8Xe9an3uR2PspawnHIcSlNPLKvBw7mgFJcY2zgvhNge46RqMj5ET7A"
+          referrerPolicy="no-referrer"
+          onError={(e) => {
+            e.currentTarget.src = '/background.jpg';
+          }}
         />
         <div className="absolute inset-0 bg-surface/70"></div>
       </div>
